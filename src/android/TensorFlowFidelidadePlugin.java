@@ -11,6 +11,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.PriorityQueue;
 
@@ -41,6 +43,8 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
     // Handler to execute in Second Thread
     // Create a background thread
     private CallbackContext callbackContext;
+    private static String BAD_IMAGE = "BAD_IMAGE";
+    private static String GOOD_IMAGE = "GOOD_IMAGE";
 
     @Override
     public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
@@ -148,9 +152,12 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
     private void executeUnetVehicleModel(Bitmap imageResized) {
         this.cordova.getThreadPool().execute(() -> {
             try {
-                float [] result = (float[]) model.runOn(imageResized);
+                float[] result;
+                result = (float[]) model.runOn(imageResized);
+                System.out.println("##### " + result.toString());
+                this.checkImage(result);
+
             } catch (Exception e) {
-                e.printStackTrace();
                 callbackContext.error("Error to load or execute the Unet Vehicle model");
             }
         });
@@ -163,7 +170,6 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
 
             try {
                 result = (float[]) model.runOn(imageResized);
-
                 if (result.length > 0) {
                     if (result[0] > result[1]) {
                         callbackContext.success(String.valueOf(false));
@@ -212,5 +218,112 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
                 callbackContext.error("Error to load or execute the framework model");
             }
         });
+    }
+
+    private void checkImage(float[] data) {
+
+        this.cordova.getThreadPool().execute(() -> {
+            //Arrays vertical horizontal
+            float[] horizontalBorder1 = Arrays.copyOfRange(data, 0, 224);
+            float[] horizontalBorder2 = Arrays.copyOfRange(data, 224, 448);
+            float[] horizontalBorder3 = Arrays.copyOfRange(data, 448, 672);
+            ////////////////////////////////////////////////////////////////////////
+            float[] horizontalBorder4 = Arrays.copyOfRange(data, 49503, 49727);
+            float[] horizontalBorder5 = Arrays.copyOfRange(data, 49727, 49951);
+            float[] horizontalBorder6 = Arrays.copyOfRange(data, 49951, 50175);
+
+            //Check HORIZONTAL
+            if (checkLines(horizontalBorder1)) {
+                callbackContext.success(BAD_IMAGE);
+            } else if (checkLines(horizontalBorder2)) {
+                callbackContext.success(BAD_IMAGE);
+            } else if (checkLines(horizontalBorder3)) {
+                callbackContext.success(BAD_IMAGE);
+            } else if (checkLines(horizontalBorder4)) {
+                callbackContext.success(BAD_IMAGE);
+            } else if (checkLines(horizontalBorder5)) {
+                callbackContext.success(BAD_IMAGE);
+            } else if (checkLines(horizontalBorder6)) {
+                callbackContext.success(BAD_IMAGE);
+            }
+
+            //Arrays vertical borders
+            ArrayList<Float> verticalBorder1 = new ArrayList<>();
+            ArrayList<Float> verticalBorder2 = new ArrayList<>();
+            ArrayList<Float> verticalBorder3 = new ArrayList<>();
+            ArrayList<Float> verticalBorder4 = new ArrayList<>();
+            ArrayList<Float> verticalBorder5 = new ArrayList<>();
+            ArrayList<Float> verticalBorder6 = new ArrayList<>();
+
+            for (int index = 0; index < 224; index++) {
+                float[] line = Arrays.copyOfRange(data, index * 224, (index + 1) * 224);
+
+                verticalBorder1.add(line[0]);
+                verticalBorder2.add(line[1]);
+                verticalBorder3.add(line[2]);
+
+                verticalBorder4.add(line[221]);
+                verticalBorder5.add(line[222]);
+                verticalBorder6.add(line[223]);
+            }
+
+            //Check VERTICAL COLUMNS
+            if (checkColumns(verticalBorder1)) {
+                callbackContext.success(BAD_IMAGE);
+            } else if (checkColumns(verticalBorder2)) {
+                callbackContext.success(BAD_IMAGE);
+            } else if (checkColumns(verticalBorder3)) {
+                callbackContext.success(BAD_IMAGE);
+            } else if (checkColumns(verticalBorder4)) {
+                callbackContext.success(BAD_IMAGE);
+            } else if (checkColumns(verticalBorder5)) {
+                callbackContext.success(BAD_IMAGE);
+            } else if (checkColumns(verticalBorder6)) {
+                callbackContext.success(BAD_IMAGE);
+            } else {
+                callbackContext.success(GOOD_IMAGE);
+            }
+        });
+    }
+
+    private boolean checkLines(float[] values) {
+
+        int pixelLines = 0;
+
+        for (int i = 0; i < 224; i++) {
+
+            float currentValueAt = values[i];
+
+            if (currentValueAt >= 0.5) {
+                pixelLines++;
+            } else {
+                pixelLines = 0;
+            }
+
+            if (pixelLines == 10) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkColumns(ArrayList<Float> values) {
+        int pixelLines = 0;
+
+        for (int i = 0; i < 224; i++) {
+
+            float currentValueAt = values.get(i);
+
+            if (currentValueAt >= 0.5) {
+                pixelLines++;
+            } else {
+                pixelLines = 0;
+            }
+
+            if (pixelLines == 10) {
+                return true;
+            }
+        }
+        return false;
     }
 }
