@@ -28,7 +28,7 @@
   "outputs": [
     {
       "name": "output",
-      "type": "image",
+      "type": "array",
       "shape": [
         224,
         224,
