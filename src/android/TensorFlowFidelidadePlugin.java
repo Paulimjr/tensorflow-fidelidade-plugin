@@ -1,7 +1,9 @@
 package com.tensorflow.fidelidade.plugin;
 
+import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.util.Base64;
 import android.util.Log;
 
@@ -116,6 +118,15 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
 
                 case UNET_VEHICLE_MODEL: {
                     imageResized = this.resizeImage(image, 224);
+
+                    // Start show Image
+                  // Intent intent = new Intent(this.cordova.getActivity(), ImageTest.class);
+                 //   intent.putExtra("img", imageResized);
+                //    this.cordova.getActivity().startActivity(intent);
+
+                    //sizeOf(imageResized);
+
+
                     this.executeUnetVehicleModel(imageResized);
                     break;
                 }
@@ -125,6 +136,15 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
             this.callbackContext.error("Error to load a model with name " + modelName);
         }
 
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
+    protected int sizeOf(Bitmap data) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB_MR1) {
+            return data.getRowBytes() * data.getHeight();
+        } else {
+            return data.getByteCount();
+        }
     }
 
     private Bitmap convertBase64ToBitmap(String b64) {
@@ -154,7 +174,6 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
             try {
                 float[] result;
                 result = (float[]) model.runOn(imageResized);
-                System.out.println("##### " + result.toString());
                 this.checkImage(result);
 
             } catch (Exception e) {
