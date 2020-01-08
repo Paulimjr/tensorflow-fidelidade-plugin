@@ -14,10 +14,8 @@
     </js-module>
     
      <!-- ios -->
-    
-    <dependency id="cordova-plugin-cocoapods-support" url="https://github.com/andregrillo/cordova-plugin-cocoapods-support.git"/>
-    
     <platform name="ios">
+	<dependency id="cordova-plugin-cocoapods-support" url="https://github.com/andregrillo/cordova-plugin-cocoapods-support.git"/>
 
         <config-file target="config.xml" parent="/*">
             <feature name="TensorFlowFidelidadePlugin">

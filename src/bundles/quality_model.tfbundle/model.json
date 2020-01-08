@@ -23,7 +23,7 @@
     {
       "name": "output",
       "type": "array",
-      "shape": [1,2],
+      "shape": [1,2]
     }
   ]
 }
