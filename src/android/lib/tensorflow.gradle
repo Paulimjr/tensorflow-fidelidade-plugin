@@ -37,7 +37,7 @@ android {
 repositories {
     jcenter()
     flatDir {
-        dirs 'src/main/libs'
+        dirs 'libs'
     }
 }
 
