@@ -22,6 +22,10 @@ var exec = require('cordova/exec');
  * @param successCallback the success
  * @param errorCallback the error
  */
-exports.loadModel = function(modelName, imagePath, successCallback, errorCallback) {
-    exec(successCallback, errorCallback,  'TensorFlowFidelidadePlugin', 'loadModel', [modelName, imagePath]);
+exports.executeModel = function(modelName, imagePath, successCallback, errorCallback) {
+    exec(successCallback, errorCallback,  'TensorFlowFidelidadePlugin', 'executeModel', [modelName, imagePath]);
+};
+
+exports.loadModels = function(enqModel, qualityModel, unetModel, successCallback, errorCallback) {
+    exec(successCallback, errorCallback,  'TensorFlowFidelidadePlugin', 'loadModels', [enqModel, qualityModel, unetModel]);
 };
