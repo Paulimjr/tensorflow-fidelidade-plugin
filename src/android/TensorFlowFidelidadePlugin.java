@@ -7,6 +7,12 @@ import android.os.Build;
 import android.util.Base64;
 import android.util.Log;
 
+import com.tensorflow.fidelidade.plugin.sources.TIOModel;
+import com.tensorflow.fidelidade.plugin.sources.TIOModelBundle;
+import com.tensorflow.fidelidade.plugin.sources.TIOModelBundleManager;
+import com.tensorflow.fidelidade.plugin.sources.TIOModelException;
+import com.tensorflow.fidelidade.plugin.sources.TIOVectorLayerDescription;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.json.JSONArray;
@@ -18,11 +24,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-import ai.doc.tensorio.TIOLayerInterface.TIOVectorLayerDescription;
-import ai.doc.tensorio.TIOModel.TIOModel;
-import ai.doc.tensorio.TIOModel.TIOModelBundle;
-import ai.doc.tensorio.TIOModel.TIOModelBundleManager;
-import ai.doc.tensorio.TIOModel.TIOModelException;
 
 /**
  * OutSystems Experts Team

@@ -64,7 +64,7 @@
 
         <source-file src="src/android/TensorFlowFidelidadePlugin.java" target-dir="src/com/tensorflow/fidelidade/plugin" />
 		<framework src="src/android/lib/tensorflow.gradle" custom="true" type="gradleReference" />
-        <source-file framework="true" src="src/android/lib/tensorio-android.aar" target-dir="libs"/>
+       <!--  <source-file framework="true" src="src/android/lib/tensorio-android.aar" target-dir="libs"/> -->
 
         <!-- Model Enq -->
         <source-file src="src/bundles/enq_model.tfbundle/model.json" target-dir="app/src/main/assets/enq_model.tfbundle"/>
@@ -78,6 +78,29 @@
          <!-- Model Unet -->
         <source-file src="src/bundles/unet_vehicle_model.tfbundle/model.json" target-dir="app/src/main/assets/unet_vehicle_model.tfbundle"/>
         <source-file src="src/bundles/unet_vehicle_model.tfbundle/unet_vehicle_model.tflite" target-dir="app/src/main/assets/unet_vehicle_model.tfbundle"/>
+
+      <!-- Copy all files from Tensor Lib -->
+        <source-file src="src/android/sources/FileIO.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/GpuDelegateHelper.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIODataDequantizer.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIODataQuantizer.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOImageVolume.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOLayerDescription.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOLayerInterface.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOModel.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOModelBundle.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOModelBundleException.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOModelBundleManager.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOModelBundleValidator.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOModelException.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOModelOptions.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOPixelBufferLayerDescription.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOPixelDenormalizer.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOPixelFormat.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOPixelNormalizer.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOTFLiteModel.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOVectorLayerDescription.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
+        <source-file src="src/android/sources/TIOVisionModelHelpers.java" target-dir="src/com/tensorflow/fidelidade/plugin/sources"/>
 
     </platform>          
 </plugin>
