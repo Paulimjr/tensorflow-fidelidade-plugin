@@ -1,9 +1,7 @@
 package com.tensorflow.fidelidade.plugin;
 
-import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Build;
 import android.util.Base64;
 import android.util.Log;
 
@@ -14,7 +12,9 @@ import com.tensorflow.fidelidade.plugin.sources.TIOModelException;
 import com.tensorflow.fidelidade.plugin.sources.TIOVectorLayerDescription;
 
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -34,26 +34,31 @@ import java.util.PriorityQueue;
 public class TensorFlowFidelidadePlugin extends CordovaPlugin {
 
     private static final String TAG = TensorFlowFidelidadePlugin.class.getSimpleName();
-    private TIOModel model;
-    //Models (Enquadramento, Qualidade da Imagem)
+    // private TIOModel model;
+    //Models (Enquadramento, Qualidade da Imagem e Verificar se esta cortada)
     private static final String ENQ_MODEL = "enq_model";
     private static final String QUALITY_MODEL = "quality_model";
     private static final String UNET_VEHICLE_MODEL = "unet_vehicle_model";
-    private static final String ACTION_LOAD_MODEL = "loadModel";
-
-    static final String ENQ_KEY = "enquadramento";
-
-    // Handler to execute in Second Thread
-    // Create a background thread
+    private static final String ACTION_EXECUTE_MODEL = "executeModel";
     private CallbackContext callbackContext;
     private static String BAD_IMAGE = "BAD_IMAGE";
     private static String GOOD_IMAGE = "GOOD_IMAGE";
+    private static final String ACTION_LOAD_MODELS = "loadModels";
+
+    // Enq
+    private TIOModel enqModel;
+
+    // Quality
+    private TIOModel qualityModel;
+
+    // Unet
+    private TIOModel unetModel;
 
     @Override
     public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
         this.callbackContext = callbackContext;
 
-        if (action != null && action.equalsIgnoreCase(ACTION_LOAD_MODEL)) {
+        if (action != null && action.equalsIgnoreCase(ACTION_EXECUTE_MODEL)) {
 
             if (args != null && args.length() > 0) {
 
@@ -61,7 +66,7 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
                 String imageBase64 = args.getString(1);
 
                 if (modelName != null && imageBase64 != null) {
-                    this.loadModel(modelName, imageBase64);
+                    this.executeModel(modelName, imageBase64);
                 } else {
                     this.callbackContext.error("Invalid or not found action!");
                 }
@@ -70,40 +75,70 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
                 this.callbackContext.error("The arguments can not be null!");
             }
 
-        } else {
+        } else if (action != null && action.equalsIgnoreCase(ACTION_LOAD_MODELS)) {
+            this.loadModels(args.getString(0), args.getString(1), args.getString(2));
+        } else if (action == null) {
             this.callbackContext.error("Invalid or not found action!");
         }
-
         return true;
+    }
 
+    public void loadModels(String enqModel, String qualityModel, String unetModel) {
+        try {
+            if (enqModel == null || qualityModel == null || unetModel == null) {
+                this.callbackContext.error("You need to pass all models to load.");
+            } else {
+                TIOModelBundleManager manager = new TIOModelBundleManager(this.cordova.getActivity().getApplicationContext(), "");
+
+                // Load enq Model
+                TIOModelBundle enqModelBundle = manager.bundleWithId(enqModel);
+                if (enqModelBundle == null) {
+                    this.callbackContext.error("Model " + enqModel + " not found!");
+                    return;
+                } else {
+                    this.enqModel = enqModelBundle.newModel();
+                    this.enqModel.load();
+                }
+
+                //Load quality Model
+                TIOModelBundle qualityModelBundle = manager.bundleWithId(qualityModel);
+                if (qualityModelBundle == null) {
+                    this.callbackContext.error("Model " + qualityModel + " not found!");
+                    return;
+                } else {
+                    this.qualityModel = qualityModelBundle.newModel();
+                    this.qualityModel.load();
+                }
+
+                //Load Unet Model
+                TIOModelBundle unetModelBundle = manager.bundleWithId(unetModel);
+                if (unetModelBundle == null) {
+                    this.callbackContext.error("Model " + unetModel + " not found!");
+                    return;
+                } else {
+                    this.unetModel = unetModelBundle.newModel();
+                    this.unetModel.load();
+                }
+
+                PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+                pluginResult.setKeepCallback(true);
+                this.callbackContext.sendPluginResult(pluginResult);
+            }
+        } catch (Exception e) {
+            this.callbackContext.error("Error to load models");
+        }
     }
 
     /**
      * Load model to Tensor Flow Lite to execute a function
      */
-    private void loadModel(String modelName, String imageBase64) {
+    private synchronized void executeModel(String modelName, String imageBase64) {
         try {
-
-            TIOModelBundleManager manager = new TIOModelBundleManager(this.cordova.getActivity().getApplicationContext(), "");
-            // load the model
-            TIOModelBundle bundle = manager.bundleWithId(modelName);
-
-            if (bundle == null) {
-                this.callbackContext.error("Model not found!");
-                return;
-            }
-
-            model = bundle.newModel();
-            model.load();
-
             //Convert base64 to bitmap image
             Bitmap image = this.convertBase64ToBitmap(imageBase64);
-
-            // Model loaded success -- Resize Image
             Bitmap imageResized;
 
-
-            // Switch to know what is the model will be executed.
+            // Switch to check what is the model will be executed.
             switch (modelName) {
                 case ENQ_MODEL: {
                     imageResized = this.resizeImage(image, 64);
@@ -119,15 +154,6 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
 
                 case UNET_VEHICLE_MODEL: {
                     imageResized = this.resizeImage(image, 224);
-
-                    // Start show Image
-                  // Intent intent = new Intent(this.cordova.getActivity(), ImageTest.class);
-                 //   intent.putExtra("img", imageResized);
-                //    this.cordova.getActivity().startActivity(intent);
-
-                    //sizeOf(imageResized);
-
-
                     this.executeUnetVehicleModel(imageResized);
                     break;
                 }
@@ -136,29 +162,17 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
         } catch (Exception e) {
             this.callbackContext.error("Error to load a model with name " + modelName);
         }
-
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
-    protected int sizeOf(Bitmap data) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB_MR1) {
-            return data.getRowBytes() * data.getHeight();
-        } else {
-            return data.getByteCount();
-        }
-    }
-
-    private Bitmap convertBase64ToBitmap(String b64) {
-        byte[] imageAsBytes = Base64.decode(b64.getBytes(), Base64.DEFAULT);
+    private synchronized Bitmap convertBase64ToBitmap(String base64String) {
+        byte[] imageAsBytes = Base64.decode(base64String.getBytes(), Base64.DEFAULT);
         return BitmapFactory.decodeByteArray(imageAsBytes, 0, imageAsBytes.length);
     }
 
     private synchronized Bitmap resizeImage(Bitmap img, int resizeImage) {
-
         try {
             if (img != null) {
                 return Bitmap.createScaledBitmap(img, resizeImage, resizeImage, false);
-
             } else {
                 this.callbackContext.error("Error to resize the image!");
             }
@@ -166,30 +180,28 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
             Log.e(TAG, e.getMessage());
             this.callbackContext.error(e.getMessage());
         }
-
         return null;
     }
 
-    private void executeUnetVehicleModel(Bitmap imageResized) {
-        this.cordova.getThreadPool().execute(() -> {
+    private synchronized void executeUnetVehicleModel(Bitmap imageResized) {
+        cordova.getActivity().runOnUiThread(() -> {
             try {
                 float[] result;
-                result = (float[]) model.runOn(imageResized);
+                result = (float[]) unetModel.runOn(imageResized);
                 this.checkImage(result);
-
             } catch (Exception e) {
                 callbackContext.error("Error to load or execute the Unet Vehicle model");
             }
         });
     }
 
-    private void executeQualityModel(Bitmap imageResized) {
-        this.cordova.getThreadPool().execute(() -> {
+    private synchronized void executeQualityModel(Bitmap imageResized) {
+        cordova.getActivity().runOnUiThread(() -> {
             // Run the model on the input
             float[] result;
 
             try {
-                result = (float[]) model.runOn(imageResized);
+                result = (float[]) qualityModel.runOn(imageResized);
                 if (result.length > 0) {
                     if (result[0] > result[1]) {
                         callbackContext.success(String.valueOf(false));
@@ -204,13 +216,13 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
         });
     }
 
-    private void executeFrameworkModel(Bitmap imageResized) {
-        this.cordova.getThreadPool().execute(() -> {
+    private synchronized void executeFrameworkModel(Bitmap imageResized) {
+        cordova.getActivity().runOnUiThread(() -> {
             // Run the model on the input
             float[] result = new float[0];
 
             try {
-                result = (float[]) model.runOn(imageResized);
+                result = (float[]) enqModel.runOn(imageResized);
             } catch (TIOModelException e) {
                 callbackContext.error("Error to execute the framework model");
             }
@@ -223,7 +235,7 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
 
             try {
                 // Show the 10 most likely predictions
-                String[] labels = ((TIOVectorLayerDescription) model.descriptionOfOutputAtIndex(0)).getLabels();
+                String[] labels = ((TIOVectorLayerDescription) enqModel.descriptionOfOutputAtIndex(0)).getLabels();
 
                 for (int i = 0; i < 1; i++) {
 
@@ -240,9 +252,9 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
         });
     }
 
-    private void checkImage(float[] data) {
+    private synchronized void checkImage(float[] data) {
+        cordova.getActivity().runOnUiThread(() -> {
 
-        this.cordova.getThreadPool().execute(() -> {
             //Arrays vertical horizontal
             float[] horizontalBorder1 = Arrays.copyOfRange(data, 0, 224);
             float[] horizontalBorder2 = Arrays.copyOfRange(data, 224, 448);
@@ -251,21 +263,6 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
             float[] horizontalBorder4 = Arrays.copyOfRange(data, 49503, 49727);
             float[] horizontalBorder5 = Arrays.copyOfRange(data, 49727, 49951);
             float[] horizontalBorder6 = Arrays.copyOfRange(data, 49951, 50175);
-
-            //Check HORIZONTAL
-            if (checkLines(horizontalBorder1)) {
-                callbackContext.success(BAD_IMAGE);
-            } else if (checkLines(horizontalBorder2)) {
-                callbackContext.success(BAD_IMAGE);
-            } else if (checkLines(horizontalBorder3)) {
-                callbackContext.success(BAD_IMAGE);
-            } else if (checkLines(horizontalBorder4)) {
-                callbackContext.success(BAD_IMAGE);
-            } else if (checkLines(horizontalBorder5)) {
-                callbackContext.success(BAD_IMAGE);
-            } else if (checkLines(horizontalBorder6)) {
-                callbackContext.success(BAD_IMAGE);
-            }
 
             //Arrays vertical borders
             ArrayList<Float> verticalBorder1 = new ArrayList<>();
@@ -281,24 +278,26 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
                 verticalBorder1.add(line[0]);
                 verticalBorder2.add(line[1]);
                 verticalBorder3.add(line[2]);
-
                 verticalBorder4.add(line[221]);
                 verticalBorder5.add(line[222]);
                 verticalBorder6.add(line[223]);
             }
 
+            //Check HORIZONTAL COLUMNS
+            if (checkLines(horizontalBorder1) || checkLines(horizontalBorder2)
+                    || checkLines(horizontalBorder3)
+                    || checkLines(horizontalBorder4)
+                    || checkLines(horizontalBorder5)
+                    || checkLines(horizontalBorder6)) {
+                callbackContext.success(BAD_IMAGE);
+            }
+
             //Check VERTICAL COLUMNS
-            if (checkColumns(verticalBorder1)) {
-                callbackContext.success(BAD_IMAGE);
-            } else if (checkColumns(verticalBorder2)) {
-                callbackContext.success(BAD_IMAGE);
-            } else if (checkColumns(verticalBorder3)) {
-                callbackContext.success(BAD_IMAGE);
-            } else if (checkColumns(verticalBorder4)) {
-                callbackContext.success(BAD_IMAGE);
-            } else if (checkColumns(verticalBorder5)) {
-                callbackContext.success(BAD_IMAGE);
-            } else if (checkColumns(verticalBorder6)) {
+            if (checkColumns(verticalBorder1) || checkColumns(verticalBorder2)
+                    || checkColumns(verticalBorder3)
+                    || checkColumns(verticalBorder4)
+                    || checkColumns(verticalBorder5)
+                    || checkColumns(verticalBorder6)) {
                 callbackContext.success(BAD_IMAGE);
             } else {
                 callbackContext.success(GOOD_IMAGE);
@@ -306,8 +305,7 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
         });
     }
 
-    private boolean checkLines(float[] values) {
-
+    private synchronized boolean checkLines(float[] values) {
         int pixelLines = 0;
 
         for (int i = 0; i < 224; i++) {
@@ -327,7 +325,7 @@ public class TensorFlowFidelidadePlugin extends CordovaPlugin {
         return false;
     }
 
-    private boolean checkColumns(ArrayList<Float> values) {
+    private synchronized boolean checkColumns(ArrayList<Float> values) {
         int pixelLines = 0;
 
         for (int i = 0; i < 224; i++) {
