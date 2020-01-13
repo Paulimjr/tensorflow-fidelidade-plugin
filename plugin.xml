@@ -15,22 +15,18 @@
     </js-module>
     
      <!-- ios -->
+    <!-- ios -->
     <platform name="ios">
-
-        <!-- Install Dependencies 
-        <dependency id="cordova-cocoapods-plugin" url="https://github.com/andregrillo/cordova-cocoapods-plugin.git"/>-->
-
-        <!-- TensorIO & TensorFlow Lite SDK 
-        <framework src="TensorIO/TFLite" type="podspec"/>-->
-
-        <podspec>
-          <config>
-          </config>
-          <pods>
-            <pod name="TensorIO/TFLite" options="'~> 0.9.6', :modular_headers => true" />
-          </pods>
-        </podspec>
-
+	    
+        <config-file target="config.xml" parent="/*">
+            <feature name="TensorFlowFidelidadePlugin">
+                <param name="ios-package" value="TensorFlowFidelidadePlugin"/>
+            </feature>
+        </config-file>
+	    
+        <!-- TensorIO & TensorFlow Lite SDK -->
+        <framework src="TensorIO/TFLite" type="podspec" spec="~> 0.9.6" />
+	    
         <!-- iOS Plugin -->
         <source-file src="./src/ios/TensorFlowFidelidadePlugin.mm" />
          
@@ -38,7 +34,7 @@
         <resource-file src="./src/bundles/enq_model.tfbundle"/>
         <resource-file src="./src/bundles/quality_model.tfbundle"/>
         <resource-file src="./src/bundles/unet_vehicle_model.tfbundle"/>
-
+	    
     </platform>
     
     <!-- android -->
